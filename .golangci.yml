@@ -1,0 +1,17 @@
+version: "2"
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (*net/http.Response).Body.Close
+        - (*os.File).Close
+        - fmt.Fprint
+        - fmt.Fprintln
+        - (*github.com/modelcontextprotocol/go-sdk/mcp.ClientSession).Close
+        - (*github.com/modelcontextprotocol/go-sdk/mcp.ServerSession).Close
+        - (*github.com/pinealctx/mattermost-mcp/internal/mattermost.Client).Close

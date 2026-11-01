@@ -23,6 +23,9 @@ func Connect(ctx context.Context, cfg config.Config, version string) (*Client, e
 	c := mcp.NewClient(&mcp.Implementation{Name: "mattermost-mcp", Version: version}, nil)
 	session, err := c.Connect(ctx, &mcp.StreamableClientTransport{
 		Endpoint: a.cfg.MCPURL, HTTPClient: a.client, MaxRetries: -1,
+		// This bridge snapshots tools and forwards only request/response calls.
+		// A persistent notification GET would inherit the per-request HTTP timeout.
+		DisableStandaloneSSE: true,
 	}, nil)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("connect to official MCP: %w", a.redact(err)), a.Close())

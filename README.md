@@ -129,7 +129,7 @@ A local MCP client's generic configuration can use:
 }
 ```
 
-Arrange credential injection through the launch environment; do not commit credential values to client configuration. Stdio mode never prompts or consumes stdin as a password stream. It uses stdout exclusively for MCP. The catalog is a startup snapshot: restart after server-side tool changes. No local HTTP listener is exposed. Only tools are bridged; sampling, elicitation, resources, and prompts are not forwarded.
+Arrange credential injection through the launch environment; do not commit credential values to client configuration. Stdio mode never prompts or consumes stdin as a password stream. It uses stdout exclusively for MCP. The catalog is a startup snapshot: restart after server-side tool changes. No local HTTP listener is exposed. Only tools are bridged; sampling, elicitation, resources, prompts, and unsolicited server notifications are not forwarded. The optional standalone notification SSE stream is disabled; SSE responses to tool requests remain supported.
 
 The program enforces no organization-specific communication or approval workflow. Calling a write tool performs that operation using the authenticated user's server permissions. Such workflows belong to the invoking application.
 

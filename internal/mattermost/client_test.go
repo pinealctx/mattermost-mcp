@@ -144,3 +144,19 @@ func TestNeverForwardCredentialsOnRedirect(t *testing.T) {
 		t.Fatal("credentials may have reached foreign origin")
 	}
 }
+
+func TestSessionSurvivesIdleOperationTimeout(t *testing.T) {
+	f := testutil.New(t, true)
+	cfg := f.Config()
+	cfg.Token = testutil.PAT
+	cfg.Timeout = 500 * time.Millisecond
+	c, err := Connect(context.Background(), cfg, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	time.Sleep(3 * cfg.Timeout)
+	if _, err := c.Call(context.Background(), "get_me", map[string]any{}); err != nil {
+		t.Fatalf("idle time must not end a reusable bridge session: %v", err)
+	}
+}

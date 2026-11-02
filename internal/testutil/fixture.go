@@ -16,6 +16,8 @@ import (
 
 const Session = "fixture-session"
 const PAT = "fixture-personal-token"
+const OtherPAT = "fixture-second-user"
+const ScopedPAT = "fixture-scoped-token"
 
 type Fixture struct {
 	HTTP                   *httptest.Server
@@ -23,6 +25,8 @@ type Fixture struct {
 	mu                     sync.Mutex
 	logins, logouts, calls int
 	active                 bool
+	revoked                bool
+	mcpRequests            int
 	LastArgs               json.RawMessage
 }
 
@@ -61,7 +65,8 @@ func New(t *testing.T, jsonResponse bool) *Fixture {
 			return
 		}
 		f.mu.Lock()
-		valid := r.Header.Get("Authorization") == "Bearer "+PAT || (f.active && r.Header.Get("Authorization") == "Bearer "+Session)
+		bearer := r.Header.Get("Authorization")
+		valid := (bearer == "Bearer "+PAT && !f.revoked) || bearer == "Bearer "+OtherPAT || bearer == "Bearer "+ScopedPAT || (f.active && bearer == "Bearer "+Session)
 		f.mu.Unlock()
 		if !valid {
 			w.WriteHeader(401)
@@ -75,8 +80,15 @@ func New(t *testing.T, jsonResponse bool) *Fixture {
 			f.mu.Unlock()
 			_, _ = w.Write([]byte(`{"status":"OK"}`))
 		case "/api/v4/users/me":
+			if bearer == "Bearer "+OtherPAT {
+				_, _ = w.Write([]byte(`{"id":"fixture-user-two","username":"second-user"}`))
+				return
+			}
 			_, _ = w.Write([]byte(`{"id":"fixture-user-id","username":"test-user"}`))
 		case "/plugins/mattermost-ai/mcp-server/mcp":
+			f.mu.Lock()
+			f.mcpRequests++
+			f.mu.Unlock()
 			mcpHandler.ServeHTTP(w, r)
 		default:
 			w.WriteHeader(404)
@@ -95,3 +107,6 @@ func (f *Fixture) Counts() (int, int, int) {
 	defer f.mu.Unlock()
 	return f.logins, f.logouts, f.calls
 }
+
+func (f *Fixture) MCPRequests() int { f.mu.Lock(); defer f.mu.Unlock(); return f.mcpRequests }
+func (f *Fixture) RevokePAT()       { f.mu.Lock(); defer f.mu.Unlock(); f.revoked = true }

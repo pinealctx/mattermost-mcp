@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -14,6 +15,8 @@ type Config struct {
 	URL, MCPURL, Token, Username, Password, MFAToken string
 	Timeout                                          time.Duration
 	EnabledTools                                     string
+	CacheMode, CacheDir                              string
+	CacheMessages                                    bool
 }
 
 func Load() (Config, error) {
@@ -22,6 +25,18 @@ func Load() (Config, error) {
 		Token: os.Getenv("MATTERMOST_TOKEN"), Username: os.Getenv("MATTERMOST_USERNAME"),
 		Password: os.Getenv("MATTERMOST_PASSWORD"), MFAToken: os.Getenv("MATTERMOST_MFA_TOKEN"),
 		EnabledTools: os.Getenv("MATTERMOST_ENABLED_TOOLS"), Timeout: 30 * time.Second,
+	}
+	c.CacheMode = os.Getenv("MATTERMOST_CACHE")
+	if c.CacheMode == "" {
+		c.CacheMode = "prefer"
+	}
+	c.CacheDir = os.Getenv("MATTERMOST_CACHE_DIR")
+	if v := os.Getenv("MATTERMOST_CACHE_MESSAGES"); v != "" {
+		var err error
+		c.CacheMessages, err = strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("MATTERMOST_CACHE_MESSAGES must be a boolean")
+		}
 	}
 	if value := os.Getenv("MATTERMOST_TIMEOUT"); value != "" {
 		var err error
@@ -34,6 +49,11 @@ func Load() (Config, error) {
 }
 
 func (c *Config) Validate() error {
+	switch c.CacheMode {
+	case "", "prefer", "refresh", "off":
+	default:
+		return fmt.Errorf("cache mode must be prefer, refresh or off")
+	}
 	if c.URL == "" {
 		return fmt.Errorf("set MATTERMOST_URL or --url")
 	}

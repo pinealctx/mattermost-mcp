@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/pinealctx/mattermost-mcp/internal/localcache"
 	"sort"
+	"sync"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pinealctx/mattermost-mcp/internal/config"
@@ -13,32 +15,68 @@ import (
 type Client struct {
 	Auth    *Auth
 	Session *mcp.ClientSession
+	mu      sync.Mutex
+	version string
+	store   *localcache.Store
+	recheck bool
 }
 
-func Connect(ctx context.Context, cfg config.Config, version string) (*Client, error) {
+// Open authenticates immediately but defers MCP negotiation until the first network operation.
+func Open(ctx context.Context, cfg config.Config, version string) (*Client, error) {
 	a, err := Authenticate(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
-	c := mcp.NewClient(&mcp.Implementation{Name: "mattermost-mcp", Version: version}, nil)
-	session, err := c.Connect(ctx, &mcp.StreamableClientTransport{
-		Endpoint: a.cfg.MCPURL, HTTPClient: a.client, MaxRetries: -1,
-		// This bridge snapshots tools and forwards only request/response calls.
-		// A persistent notification GET would inherit the per-request HTTP timeout.
-		DisableStandaloneSSE: true,
+	c := &Client{Auth: a, version: version}
+	if cfg.CacheMode != "" && cfg.CacheMode != "off" {
+		if err := c.openStore(ctx); err != nil {
+			return nil, errors.Join(err, a.Close())
+		}
+	}
+	return c, nil
+}
+
+func Connect(ctx context.Context, cfg config.Config, version string) (*Client, error) {
+	c, err := Open(ctx, cfg, version)
+	if err != nil {
+		return nil, err
+	}
+	c.recheck = true
+	if err := c.ensureSession(ctx); err != nil {
+		return nil, errors.Join(err, c.Close())
+	}
+	return c, nil
+}
+
+func (c *Client) ensureSession(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.Session != nil {
+		return nil
+	}
+	client := mcp.NewClient(&mcp.Implementation{Name: "mattermost-mcp", Version: c.version}, nil)
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{
+		Endpoint: c.Auth.cfg.MCPURL, HTTPClient: c.Auth.client, MaxRetries: -1, DisableStandaloneSSE: true,
 	}, nil)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("connect to official MCP: %w", a.redact(err)), a.Close())
+		return fmt.Errorf("connect to official MCP: %w", c.Auth.redact(err))
 	}
-	return &Client{Auth: a, Session: session}, nil
+	c.Session = session
+	return nil
 }
 
 func (c *Client) Close() error {
-	err := c.Session.Close()
+	var err error
+	if c.Session != nil {
+		err = c.Session.Close()
+	}
 	return errors.Join(c.Auth.redact(err), c.Auth.Close())
 }
 
-func (c *Client) Tools(ctx context.Context) ([]*mcp.Tool, error) {
+func (c *Client) fetchTools(ctx context.Context) ([]*mcp.Tool, error) {
+	if err := c.ensureSession(ctx); err != nil {
+		return nil, err
+	}
 	var tools []*mcp.Tool
 	seen := map[string]bool{}
 	cursor := ""
@@ -61,7 +99,10 @@ func (c *Client) Tools(ctx context.Context) ([]*mcp.Tool, error) {
 	return nil, errors.New("upstream tools pagination exceeded 100 pages")
 }
 
-func (c *Client) Call(ctx context.Context, name string, args any) (*mcp.CallToolResult, error) {
+func (c *Client) liveCall(ctx context.Context, name string, args any) (*mcp.CallToolResult, error) {
+	if err := c.ensureSession(ctx); err != nil {
+		return nil, err
+	}
 	result, err := c.Session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: args})
 	return result, c.Auth.redact(err)
 }

@@ -11,6 +11,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/pinealctx/mattermost-mcp/internal/mattermost"
+	"github.com/pinealctx/mattermost-mcp/internal/native"
 	"github.com/spf13/cobra"
 )
 
@@ -82,6 +83,9 @@ func (a *app) toolsCommand() *cobra.Command {
 	call.Flags().StringVar(&arguments, "args", "{}", "JSON object of tool arguments")
 	call.Flags().StringVar(&file, "args-file", "", "Read arguments from a JSON file, or - for stdin")
 	group.AddCommand(list, describe, call)
+	for name, spec := range native.Index {
+		group.AddCommand(a.nativeCommand(name, spec))
+	}
 	return group
 }
 
@@ -110,7 +114,7 @@ func (a *app) connectionCommand() *cobra.Command {
 	group.AddCommand(&cobra.Command{Use: "test", Args: cobra.NoArgs, Short: "Verify MCP initialization, tool discovery and get_me",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return a.withClient(cmd, func(ctx context.Context, client *mattermost.Client) error {
-				tools, err := client.Tools(ctx)
+				tools, err := client.LiveTools(ctx)
 				if err != nil {
 					return err
 				}

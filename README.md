@@ -1,10 +1,10 @@
 # Mattermost MCP
 
-A standalone Go CLI and local stdio bridge for the **official Mattermost MCP server**. Discover its live tool catalog, call tools from scripts, or expose those tools to a local MCP client.
+A standalone Go CLI and local stdio bridge for the **official Mattermost MCP server**. Use stable commands for built-in tools, discover the catalog your server enables, or expose those tools to a local MCP client.
 
 The command structure follows [openproject-mcp](https://github.com/pinealctx/openproject-mcp): Cobra commands, `-o text|json`, environment-based configuration, a root Go binary, and prebuilt releases. It uses the official [MCP Go SDK](https://github.com/modelcontextprotocol/go-sdk).
 
-This is an independent client, not an official Mattermost product. It needs an enabled Mattermost Agents HTTP MCP endpoint. It does not install plugins, change server configuration, implement a second tool catalog, or run an LLM.
+This is an independent client, not an official Mattermost product. It needs an enabled Mattermost Agents HTTP MCP endpoint. It does not install plugins, change server configuration, or run an LLM.
 
 ## Install
 
@@ -52,6 +52,9 @@ Flags override their corresponding environment values. A supplied token takes pr
 | `MATTERMOST_PASSWORD` | `--password-stdin` | Password from the environment or stdin; never a password argument |
 | `MATTERMOST_MFA_TOKEN` | — | Current one-time MFA code, if required |
 | `MATTERMOST_TIMEOUT` | `--timeout` | Timeout such as `30s` or `2m`; default `30s` |
+| `MATTERMOST_CACHE` | `--cache` | `prefer` (default), `refresh`, or `off` |
+| `MATTERMOST_CACHE_DIR` | — | Optional absolute, private directory for snapshots |
+| `MATTERMOST_CACHE_MESSAGES` | `--cache-messages` | Allow caching message results (default false) |
 | `MATTERMOST_ENABLED_TOOLS` | `mcp --enabled-tools` | Optional comma-separated stdio tool allowlist |
 
 The default MCP URL is `<base-url>/plugins/mattermost-ai/mcp-server/mcp`. Base URLs with a deployment path prefix are supported. HTTPS is required except on loopback development servers. Credentials are never forwarded across origins, and HTTP redirects are rejected. Use the final server URL.
@@ -78,6 +81,36 @@ mattermost-mcp --username alice auth login --token-only
 ```
 
 **`--token-only` intentionally emits a secret to stdout** and leaves that login session active. Direct stdout to your credential manager, not a chat, log, or ordinary document. It is the only command that exports credentials. Password/MFA prompts go to stderr. If output fails, the tool attempts to log out rather than hand over an inaccessible session. Inject the saved value as `MATTERMOST_TOKEN` for subsequent commands. Explicitly log out when done; session expiry and administrator revocation still apply. The CLI does not save or automatically refresh it.
+
+## Stable commands and availability
+
+The binary includes fixed names and parameter flags for 121 built-in registrations from [public Agents v2.11.0](https://github.com/mattermost/mattermost-plugin-agents/tree/f81a90b2b0c0b388d19a81ade9772b2506cf8f9a/mcpserver/tools), including optional and development tools. Built-in command help works without credentials. On execution the client checks the current account's server-provided catalog. The server controls availability, input validation, and authorization. Plugin-specific or newer tools remain accessible through `tool call`.
+
+```sh
+mattermost-mcp tool get-user-channels --help
+mattermost-mcp tool get-user-channels --team-id TEAM_ID --page 0 --per-page 100
+mattermost-mcp tool read-channel --channel-id CHANNEL_ID --limit 20 --cache-messages
+mattermost-mcp tool list --cache refresh
+```
+
+Underscore tool names are aliases. Scalar parameters have typed flags; arrays and objects take JSON. Use `--args-file FILE` or `--args-file -` as an alternative for the full argument object, version-specific fields or sensitive inputs. Flags that would overlap with global settings use the `--arg-` prefix (e.g. `--arg-username`). Password fields use file/stdin input. Local-filesystem-only parameters from the official plugin are excluded from the fixed HTTP flags.
+
+## Local snapshots
+
+The CLI and stdio bridge share an on-demand cache. A database belongs to one server URL (including installation path), MCP endpoint, and **server-verified user ID**. Separate injected tokens for the same account have separate cache keys because their scopes can differ. Password logins for the same account share a password-session partition. Token strings and tool argument objects are not stored as cache keys. The CLI authenticates on each invocation before serving a snapshot. A warm hit can skip both MCP initialization and the tool request. This is an online cache, not an offline account selector.
+
+| Data | Reuse window |
+| --- | --- |
+| Dynamic tool catalog (names, schemas, annotations) | 5 minutes |
+| Team, channel, membership and user lookup results on the allowlist | 2 minutes |
+| `read_channel`, `read_post`, `search_posts` results | 20 seconds with `--cache-messages` |
+| Other tools | Live |
+
+Snapshots match the exact query, including pagination, filters and requested limits. There is no background download or history index. Writes in other clients and changes to channel membership/visibility can make an unexpired snapshot stale. Use `--cache refresh` for an authoritative read and to replace the snapshot. `connection test` always verifies live connectivity. The bridge registers a catalog snapshot at startup; restart with `--cache refresh` to immediately pick up a changed toolset.
+
+With caching enabled, writes and unrecognized calls always go upstream and invalidate snapshots for the account before and after the attempt. A read that started before invalidation cannot repopulate the old generation. `--cache off` bypasses disk, including invalidation, so other processes may retain snapshots until expiry or explicit refresh. `cache clear` invalidates the current account's snapshots across its credential partitions.
+
+Files live under the OS user cache directory in `mattermost-mcp/`, or the selected private cache directory. On Unix the application directory is private (0700) and new database files use 0600. The database contains **unencrypted** cached responses. Expiry limits reuse; physical removal is separate from expiry or logical clearing. Each account holds at most 128 snapshots, each at most 1 MiB. To remove the store physically, close clients and remove the dedicated cache directory. For sensitive workloads use `--cache off`; message caching is opt-in.
 
 ## Commands
 

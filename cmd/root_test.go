@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -12,6 +13,9 @@ import (
 
 func environment(t *testing.T) {
 	t.Helper()
+	t.Setenv("MATTERMOST_CACHE_DIR", filepath.Join(t.TempDir(), "cache"))
+	t.Setenv("MATTERMOST_CACHE", "prefer")
+	t.Setenv("MATTERMOST_CACHE_MESSAGES", "false")
 	for _, key := range []string{"URL", "MCP_URL", "TOKEN", "USERNAME", "PASSWORD", "MFA_TOKEN", "TIMEOUT", "ENABLED_TOOLS"} {
 		t.Setenv("MATTERMOST_"+key, "")
 	}

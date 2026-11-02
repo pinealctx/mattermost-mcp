@@ -1,0 +1,878 @@
+{
+  "acknowledge_post": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "add_channel_member": {
+    "fields": {
+      "channel_id": "string",
+      "user_id": "string"
+    },
+    "read": false
+  },
+  "add_channel_members": {
+    "fields": {
+      "channel_id": "string",
+      "user_ids": "json"
+    },
+    "read": false
+  },
+  "add_reaction": {
+    "fields": {
+      "emoji_name": "string",
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "add_team_member": {
+    "fields": {
+      "team_id": "string",
+      "user_id": "string"
+    },
+    "read": false
+  },
+  "add_team_members": {
+    "fields": {
+      "team_id": "string",
+      "user_ids": "json"
+    },
+    "read": false
+  },
+  "archive_channel": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": false
+  },
+  "convert_channel_privacy": {
+    "fields": {
+      "channel_id": "string",
+      "privacy": "string"
+    },
+    "read": false
+  },
+  "create_channel": {
+    "fields": {
+      "display_name": "string",
+      "header": "string",
+      "name": "string",
+      "purpose": "string",
+      "team_id": "string",
+      "type": "string"
+    },
+    "read": false
+  },
+  "create_channel_bookmark": {
+    "fields": {
+      "channel_id": "string",
+      "display_name": "string",
+      "emoji": "string",
+      "file_id": "string",
+      "link_url": "string"
+    },
+    "read": false
+  },
+  "create_post": {
+    "fields": {
+      "channel_display_name": "string",
+      "channel_id": "string",
+      "files": "json",
+      "message": "string",
+      "root_id": "string",
+      "team_display_name": "string"
+    },
+    "read": false
+  },
+  "create_post_as_user": {
+    "fields": {
+      "channel_id": "string",
+      "message": "string",
+      "password": "string",
+      "props": "string",
+      "root_id": "string",
+      "username": "string"
+    },
+    "read": false
+  },
+  "create_scheduled_post": {
+    "fields": {
+      "channel_id": "string",
+      "message": "string",
+      "root_id": "string",
+      "scheduled_at": "string"
+    },
+    "read": false
+  },
+  "create_team": {
+    "fields": {
+      "description": "string",
+      "display_name": "string",
+      "name": "string",
+      "type": "string"
+    },
+    "read": false
+  },
+  "create_user": {
+    "fields": {
+      "email": "string",
+      "first_name": "string",
+      "last_name": "string",
+      "nickname": "string",
+      "password": "string",
+      "username": "string"
+    },
+    "read": false
+  },
+  "delete_channel_bookmark": {
+    "fields": {
+      "bookmark_id": "string",
+      "channel_id": "string"
+    },
+    "read": false
+  },
+  "delete_post": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "delete_scheduled_post": {
+    "fields": {
+      "scheduled_post_id": "string"
+    },
+    "read": false
+  },
+  "dm": {
+    "fields": {
+      "files": "json",
+      "message": "string",
+      "username": "string"
+    },
+    "read": false
+  },
+  "get_bot": {
+    "fields": {
+      "bot_user_id": "string"
+    },
+    "read": true
+  },
+  "get_channel_groups": {
+    "fields": {
+      "channel_id": "string",
+      "page": "int",
+      "per_page": "int"
+    },
+    "read": true
+  },
+  "get_channel_info": {
+    "fields": {
+      "channel_id": "string",
+      "channel_name": "string",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_channel_member": {
+    "fields": {
+      "channel_id": "string",
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_channel_member_counts": {
+    "fields": {
+      "channel_ids": "json"
+    },
+    "read": true
+  },
+  "get_channel_members": {
+    "fields": {
+      "channel_id": "string",
+      "exclude_bots": "bool",
+      "limit": "int",
+      "page": "int"
+    },
+    "read": true
+  },
+  "get_channel_members_by_ids": {
+    "fields": {
+      "channel_id": "string",
+      "user_ids": "json"
+    },
+    "read": true
+  },
+  "get_channel_members_by_status": {
+    "fields": {
+      "channel_id": "string",
+      "exclude_bots": "bool",
+      "page": "int",
+      "per_page": "int"
+    },
+    "read": true
+  },
+  "get_channel_moderations": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": true
+  },
+  "get_channel_stats": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": true
+  },
+  "get_channel_unread": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": true
+  },
+  "get_dm_common_teams": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": true
+  },
+  "get_file_info": {
+    "fields": {
+      "file_id": "string"
+    },
+    "read": true
+  },
+  "get_file_link": {
+    "fields": {
+      "file_id": "string"
+    },
+    "read": true
+  },
+  "get_group_info": {
+    "fields": {
+      "group_id": "string"
+    },
+    "read": true
+  },
+  "get_me": {
+    "fields": {},
+    "read": true
+  },
+  "get_mentions": {
+    "fields": {
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_new_users_in_team": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_post_files": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": true
+  },
+  "get_post_info": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": true
+  },
+  "get_post_reactions": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": true
+  },
+  "get_posts_around_unread": {
+    "fields": {
+      "channel_id": "string",
+      "limit": "int"
+    },
+    "read": true
+  },
+  "get_role": {
+    "fields": {
+      "role_id": "string",
+      "role_name": "string"
+    },
+    "read": true
+  },
+  "get_team_groups": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_team_info": {
+    "fields": {
+      "team_id": "string",
+      "team_name": "string"
+    },
+    "read": true
+  },
+  "get_team_member": {
+    "fields": {
+      "team_id": "string",
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_team_members": {
+    "fields": {
+      "exclude_bots": "bool",
+      "limit": "int",
+      "page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_team_stats": {
+    "fields": {
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_threads": {
+    "fields": {
+      "limit": "int",
+      "team_id": "string",
+      "unread_only": "bool"
+    },
+    "read": true
+  },
+  "get_unread_counts": {
+    "fields": {
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_user": {
+    "fields": {
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_user_by_email": {
+    "fields": {
+      "email": "string"
+    },
+    "read": true
+  },
+  "get_user_by_username": {
+    "fields": {
+      "username": "string"
+    },
+    "read": true
+  },
+  "get_user_channel_memberships": {
+    "fields": {
+      "team_id": "string",
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_user_channels": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_user_cpa_values": {
+    "fields": {
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_user_custom_status": {
+    "fields": {
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_user_groups": {
+    "fields": {
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_user_stats": {
+    "fields": {},
+    "read": true
+  },
+  "get_user_status": {
+    "fields": {
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_user_teams": {
+    "fields": {
+      "user_id": "string"
+    },
+    "read": true
+  },
+  "get_users_by_ids": {
+    "fields": {
+      "user_ids": "json"
+    },
+    "read": true
+  },
+  "get_users_by_usernames": {
+    "fields": {
+      "usernames": "json"
+    },
+    "read": true
+  },
+  "get_users_in_group_channels": {
+    "fields": {
+      "channel_ids": "json"
+    },
+    "read": true
+  },
+  "get_users_in_team": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_users_not_in_channel": {
+    "fields": {
+      "channel_id": "string",
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_users_not_in_team": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "get_users_statuses": {
+    "fields": {
+      "user_ids": "json"
+    },
+    "read": true
+  },
+  "group_message": {
+    "fields": {
+      "files": "json",
+      "message": "string",
+      "usernames": "json"
+    },
+    "read": false
+  },
+  "invite_users_to_team": {
+    "fields": {
+      "emails": "json",
+      "team_id": "string"
+    },
+    "read": false
+  },
+  "invite_users_to_team_and_channels": {
+    "fields": {
+      "channel_ids": "json",
+      "emails": "json",
+      "message": "string",
+      "team_id": "string"
+    },
+    "read": false
+  },
+  "list_agents": {
+    "fields": {},
+    "read": true
+  },
+  "list_archived_channels": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "list_bots": {
+    "fields": {
+      "page": "int",
+      "per_page": "int"
+    },
+    "read": true
+  },
+  "list_channel_bookmarks": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": true
+  },
+  "list_cpa_fields": {
+    "fields": {},
+    "read": true
+  },
+  "list_custom_emoji": {
+    "fields": {
+      "page": "int",
+      "per_page": "int"
+    },
+    "read": true
+  },
+  "list_groups": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "query": "string"
+    },
+    "read": true
+  },
+  "list_incoming_webhooks": {
+    "fields": {
+      "page": "int",
+      "per_page": "int"
+    },
+    "read": true
+  },
+  "list_outgoing_webhooks": {
+    "fields": {
+      "channel_id": "string",
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "list_pinned_posts": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": true
+  },
+  "list_saved_posts": {
+    "fields": {
+      "channel_id": "string",
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "list_scheduled_posts": {
+    "fields": {
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "list_sidebar_categories": {
+    "fields": {
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "list_team_channels": {
+    "fields": {
+      "page": "int",
+      "per_page": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "mark_channel_read": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": false
+  },
+  "mark_channels_viewed": {
+    "fields": {
+      "channel_ids": "json"
+    },
+    "read": false
+  },
+  "mark_post_unread": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "pin_post": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "read_channel": {
+    "fields": {
+      "after": "string",
+      "before": "string",
+      "channel_id": "string",
+      "limit": "int",
+      "page": "int",
+      "since": "string"
+    },
+    "read": true
+  },
+  "read_file": {
+    "fields": {
+      "file_id": "string",
+      "limit": "int",
+      "offset": "int"
+    },
+    "read": true
+  },
+  "read_post": {
+    "fields": {
+      "include_thread": "bool",
+      "post_id": "string"
+    },
+    "read": true
+  },
+  "remove_channel_member": {
+    "fields": {
+      "channel_id": "string",
+      "user_id": "string"
+    },
+    "read": false
+  },
+  "remove_reaction": {
+    "fields": {
+      "emoji_name": "string",
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "remove_team_member": {
+    "fields": {
+      "team_id": "string",
+      "user_id": "string"
+    },
+    "read": false
+  },
+  "restore_channel": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": false
+  },
+  "save_post": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "search_channels": {
+    "fields": {
+      "archived": "bool",
+      "private": "bool",
+      "public": "bool",
+      "team_id": "string",
+      "term": "string"
+    },
+    "read": true
+  },
+  "search_custom_emoji": {
+    "fields": {
+      "term": "string"
+    },
+    "read": true
+  },
+  "search_files": {
+    "fields": {
+      "team_id": "string",
+      "terms": "string"
+    },
+    "read": true
+  },
+  "search_posts": {
+    "fields": {
+      "after": "string",
+      "before": "string",
+      "channel_id": "string",
+      "from": "string",
+      "in": "string",
+      "keyword_limit": "int",
+      "keyword_offset": "int",
+      "query": "string",
+      "semantic_limit": "int",
+      "semantic_offset": "int",
+      "team_id": "string"
+    },
+    "read": true
+  },
+  "search_teams": {
+    "fields": {
+      "term": "string"
+    },
+    "read": true
+  },
+  "search_users": {
+    "fields": {
+      "limit": "int",
+      "term": "string"
+    },
+    "read": true
+  },
+  "search_users_in_channel": {
+    "fields": {
+      "channel_id": "string",
+      "not_in": "bool",
+      "team_id": "string",
+      "term": "string"
+    },
+    "read": true
+  },
+  "search_users_in_team": {
+    "fields": {
+      "not_in": "bool",
+      "team_id": "string",
+      "term": "string"
+    },
+    "read": true
+  },
+  "set_channel_favorite": {
+    "fields": {
+      "channel_id": "string",
+      "favorite": "bool"
+    },
+    "read": false
+  },
+  "set_channel_mute": {
+    "fields": {
+      "channel_id": "string",
+      "muted": "bool"
+    },
+    "read": false
+  },
+  "set_dnd": {
+    "fields": {
+      "end_time": "string"
+    },
+    "read": false
+  },
+  "set_post_reminder": {
+    "fields": {
+      "post_id": "string",
+      "remind_at": "string"
+    },
+    "read": false
+  },
+  "set_status": {
+    "fields": {
+      "status": "string"
+    },
+    "read": false
+  },
+  "set_thread_follow": {
+    "fields": {
+      "follow": "bool",
+      "team_id": "string",
+      "thread_id": "string"
+    },
+    "read": false
+  },
+  "unpin_post": {
+    "fields": {
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "update_channel": {
+    "fields": {
+      "channel_id": "string",
+      "display_name": "string",
+      "header": "string",
+      "name": "string",
+      "purpose": "string"
+    },
+    "read": false
+  },
+  "update_channel_bookmark": {
+    "fields": {
+      "bookmark_id": "string",
+      "channel_id": "string",
+      "display_name": "string",
+      "emoji": "string",
+      "link_url": "string"
+    },
+    "read": false
+  },
+  "update_channel_member_roles": {
+    "fields": {
+      "admin": "bool",
+      "channel_id": "string",
+      "user_id": "string"
+    },
+    "read": false
+  },
+  "update_channel_notify_props": {
+    "fields": {
+      "channel_id": "string",
+      "desktop": "string",
+      "mark_unread": "string",
+      "push": "string"
+    },
+    "read": false
+  },
+  "update_post": {
+    "fields": {
+      "message": "string",
+      "post_id": "string"
+    },
+    "read": false
+  },
+  "update_scheduled_post": {
+    "fields": {
+      "channel_id": "string",
+      "message": "string",
+      "scheduled_at": "string",
+      "scheduled_post_id": "string"
+    },
+    "read": false
+  },
+  "update_team": {
+    "fields": {
+      "allow_open_invite": "bool",
+      "description": "string",
+      "display_name": "string",
+      "team_id": "string"
+    },
+    "read": false
+  },
+  "update_team_member_roles": {
+    "fields": {
+      "admin": "bool",
+      "team_id": "string",
+      "user_id": "string"
+    },
+    "read": false
+  },
+  "update_user": {
+    "fields": {
+      "first_name": "string",
+      "last_name": "string",
+      "nickname": "string",
+      "position": "string",
+      "user_id": "string"
+    },
+    "read": false
+  },
+  "upload_file": {
+    "fields": {
+      "channel_id": "string"
+    },
+    "read": false
+  }
+}

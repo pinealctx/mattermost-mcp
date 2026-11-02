@@ -23,7 +23,12 @@ func TestWarmReadsIsolationAndInvalidation(t *testing.T) {
 		}
 	}
 	read := func() { require("tool", "get-team-info", "--team-name", "example") }
-	read()
+	for _, want := range []string{"live", "hit"} {
+		_, trace, err := execute("tool", "get-team-info", "--team-name", "example", "--cache-trace")
+		if err != nil || !strings.Contains(trace, "cache "+want+" \"get_team_info\"") || strings.Contains(trace, "example") {
+			t.Fatalf("trace=%q err=%v", trace, err)
+		}
+	}
 	first := f.MCPRequests()
 	require("tool", "call", "get_team_info", "--args", `{ "team_name": "example" }`)
 	if f.MCPRequests() != first {

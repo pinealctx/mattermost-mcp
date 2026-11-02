@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/pinealctx/mattermost-mcp/internal/localcache"
+	"io"
 	"sort"
 	"sync"
 
@@ -19,6 +20,8 @@ type Client struct {
 	version string
 	store   *localcache.Store
 	recheck bool
+	// CacheTrace optionally receives cache source diagnostics, never arguments or responses.
+	CacheTrace io.Writer
 }
 
 // Open authenticates immediately but defers MCP negotiation until the first network operation.

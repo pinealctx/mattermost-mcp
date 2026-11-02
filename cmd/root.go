@@ -27,6 +27,7 @@ type app struct {
 	passwordStdin                        bool
 	cacheMode                            string
 	cacheMessages                        bool
+	cacheTrace                           bool
 }
 
 func NewRoot(version string) *cobra.Command {
@@ -38,6 +39,7 @@ func NewRoot(version string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error { return a.runBridge(cmd, "") },
 	}
 	f := root.PersistentFlags()
+	f.BoolVar(&a.cacheTrace, "cache-trace", false, "Report cached versus live reads on stderr")
 	f.StringVar(&a.cacheMode, "cache", "", "Read policy: prefer, refresh or off (MATTERMOST_CACHE)")
 	f.BoolVar(&a.cacheMessages, "cache-messages", false, "Allow short-lived message and search snapshots (MATTERMOST_CACHE_MESSAGES)")
 	f.StringVar(&a.url, "url", "", "Mattermost base URL (MATTERMOST_URL)")
@@ -145,6 +147,9 @@ func (a *app) withClient(cmd *cobra.Command, fn func(context.Context, *mattermos
 		return err
 	}
 	defer func() { err = errors.Join(err, client.Close()) }()
+	if a.cacheTrace {
+		client.CacheTrace = cmd.ErrOrStderr()
+	}
 	return fn(ctx, client)
 }
 
@@ -161,6 +166,9 @@ func (a *app) runBridge(cmd *cobra.Command, enabled string) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, client.Close()) }()
+	if a.cacheTrace {
+		client.CacheTrace = cmd.ErrOrStderr()
+	}
 	ctx, cancel := context.WithTimeout(cmd.Context(), cfg.Timeout)
 	srv, err := server.New(ctx, client, a.version, enabled, cfg.Timeout)
 	cancel()

@@ -106,6 +106,8 @@ The CLI and stdio bridge share an on-demand cache. A database belongs to one ser
 | `read_channel`, `read_post`, `search_posts` results | 20 seconds with `--cache-messages` |
 | Other tools | Live |
 
+Pass `--cache-trace` to show which eligible reads came from the server (`live`) or disk (`hit`) on stderr. Catalog and tool-result events are separate. Arguments and result contents are omitted.
+
 Snapshots match the exact query, including pagination, filters and requested limits. There is no background download or history index. Writes in other clients and changes to channel membership/visibility can make an unexpired snapshot stale. Use `--cache refresh` for an authoritative read and to replace the snapshot. `connection test` always verifies live connectivity. The bridge registers a catalog snapshot at startup; restart with `--cache refresh` to immediately pick up a changed toolset.
 
 With caching enabled, writes and unrecognized calls always go upstream and invalidate snapshots for the account before and after the attempt. A read that started before invalidation cannot repopulate the old generation. `--cache off` bypasses disk, including invalidation, so other processes may retain snapshots until expiry or explicit refresh. `cache clear` invalidates the current account's snapshots across its credential partitions.

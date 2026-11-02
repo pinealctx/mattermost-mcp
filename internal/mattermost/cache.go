@@ -13,6 +13,12 @@ import (
 	"github.com/pinealctx/mattermost-mcp/internal/native"
 )
 
+func (c *Client) trace(source, name string) {
+	if c.CacheTrace != nil {
+		_, _ = fmt.Fprintf(c.CacheTrace, "cache %s %q\n", source, name)
+	}
+}
+
 const catalogTTL = 5 * time.Minute
 
 func (c *Client) openStore(ctx context.Context) error {
@@ -78,12 +84,17 @@ func (c *Client) catalog(ctx context.Context, prefer bool) ([]*mcp.Tool, error) 
 		return nil, err
 	}
 	if prefer && hit {
-		return tools, c.checkHit(ctx)
+		if err := c.checkHit(ctx); err != nil {
+			return nil, err
+		}
+		c.trace("hit", "catalog")
+		return tools, nil
 	}
 	tools, err = c.fetchTools(ctx)
 	if err != nil {
 		return nil, errors.Join(err, c.store.Clear())
 	}
+	c.trace("live", "catalog")
 	return tools, c.store.Put("catalog", gen, catalogTTL, tools)
 }
 
@@ -179,6 +190,7 @@ func (c *Client) call(ctx context.Context, name string, args any, tool *mcp.Tool
 		return nil, err
 	}
 	if hit && c.Auth.cfg.CacheMode == "prefer" {
+		c.trace("hit", name)
 		return &cached, nil
 	}
 	result, err := c.liveCall(ctx, name, args)
@@ -188,5 +200,6 @@ func (c *Client) call(ctx context.Context, name string, args any, tool *mcp.Tool
 		}
 		return result, err
 	}
+	c.trace("live", name)
 	return result, c.store.Put(key, gen, ttl, result)
 }

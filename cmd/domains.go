@@ -21,7 +21,7 @@ func (a *app) domainCommands() []*cobra.Command {
 		return a.call(cmd, "read_channel", map[string]any{"channel_id": args[0], "limit": limit})
 	}}
 	read.Flags().IntVar(&limit, "limit", 20, "Maximum messages to request")
-	channel.AddCommand(read)
+	channel.AddCommand(read, a.openChannel())
 	post := &cobra.Command{Use: "post", Short: "Read, create and reply to messages"}
 	post.AddCommand(a.simple("get POST_ID", "Read a post and its thread", "read_post", "post_id"), a.messageCommand())
 	var teamID, channelID string

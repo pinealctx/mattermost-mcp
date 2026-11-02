@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"strconv"
+
 	"strings"
 	"time"
 )
@@ -16,7 +16,6 @@ type Config struct {
 	Timeout                                          time.Duration
 	EnabledTools                                     string
 	CacheMode, CacheDir                              string
-	CacheMessages                                    bool
 }
 
 func Load() (Config, error) {
@@ -31,13 +30,6 @@ func Load() (Config, error) {
 		c.CacheMode = "prefer"
 	}
 	c.CacheDir = os.Getenv("MATTERMOST_CACHE_DIR")
-	if v := os.Getenv("MATTERMOST_CACHE_MESSAGES"); v != "" {
-		var err error
-		c.CacheMessages, err = strconv.ParseBool(v)
-		if err != nil {
-			return c, fmt.Errorf("MATTERMOST_CACHE_MESSAGES must be a boolean")
-		}
-	}
 	if value := os.Getenv("MATTERMOST_TIMEOUT"); value != "" {
 		var err error
 		c.Timeout, err = time.ParseDuration(value)

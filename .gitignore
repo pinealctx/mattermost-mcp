@@ -7,3 +7,6 @@ coverage.out
 .DS_Store
 __pycache__/
 *.db
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

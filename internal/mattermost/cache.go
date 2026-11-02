@@ -111,14 +111,10 @@ func (c *Client) availableTool(ctx context.Context, name string) (*mcp.Tool, err
 	return nil, fmt.Errorf("tool %q is unavailable in the server catalog (use --cache refresh to rediscover)", name)
 }
 
-func dataTTL(name string, messages bool) time.Duration {
+func dataTTL(name string) time.Duration {
 	switch name {
 	case "get_user_teams", "get_team_info", "get_channel_info", "get_user_channels", "list_team_channels", "get_user", "get_user_by_username":
 		return 2 * time.Minute
-	case "read_channel", "read_post", "search_posts":
-		if messages {
-			return 20 * time.Second
-		}
 	}
 	return 0
 }
@@ -157,7 +153,7 @@ func (c *Client) call(ctx context.Context, name string, args any, tool *mcp.Tool
 	if c.store == nil {
 		return c.liveCall(ctx, name, args)
 	}
-	ttl := dataTTL(name, c.Auth.cfg.CacheMessages)
+	ttl := dataTTL(name)
 	if tool == nil && ttl != 0 {
 		var err error
 		tool, err = c.availableTool(ctx, name)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/pinealctx/mattermost-mcp/internal/mattermost"
 	"github.com/spf13/cobra"
@@ -11,15 +12,16 @@ import (
 
 func (a *app) authCommand() *cobra.Command {
 	group := &cobra.Command{Use: "auth", Short: "Validate, export or end a login session"}
-	var tokenOnly bool
+	var tokenOnly, noSync bool
+	var only string
 	login := &cobra.Command{Use: "login", Short: "Validate password login; optionally export its session token", Args: cobra.NoArgs,
-		Long: "Without --token-only, validate login and immediately log out. With --token-only, print only the new session token and leave the session active for an external credential manager. No token is stored by this tool.",
+		Long: "Synchronize the most recent page in each joined conversation, then launch a resumable background backfill. A temporary login session is logged out when its worker finishes. Use --no-sync for validation only. With --token-only, export a new password session for an external credential manager.",
 		RunE: func(cmd *cobra.Command, _ []string) (err error) {
 			cfg, err := a.configuration(cmd, true)
 			if err != nil {
 				return err
 			}
-			if cfg.Token != "" {
+			if cfg.Token != "" && tokenOnly {
 				return errors.New("auth login requires password credentials; unset MATTERMOST_TOKEN or use auth status")
 			}
 			ctx, cancel := context.WithTimeout(cmd.Context(), cfg.Timeout)
@@ -29,13 +31,36 @@ func (a *app) authCommand() *cobra.Command {
 				return err
 			}
 			defer func() { err = errors.Join(err, auth.Close()) }()
+			if !noSync {
+				e, openErr := historyFor(cmd.Context(), cfg, auth, os.Getenv("MATTERMOST_HISTORY_DIR"))
+				if openErr != nil {
+					return openErr
+				}
+				defer func() { err = errors.Join(err, e.Store.Close()) }()
+				ids, initErr := e.Recent(cmd.Context(), only)
+				if initErr != nil {
+					if len(ids) == 0 {
+						return initErr
+					}
+					fmt.Fprintln(cmd.ErrOrStderr(), "Some recent pages could not be initialized; resume with sync start:", initErr)
+				}
+				if launchErr := spawn(cmd.Context(), cfg, auth, only, ids, tokenOnly); launchErr != nil {
+					return launchErr
+				}
+			} else if cfg.Token != "" {
+				if _, err := auth.VerifiedUser(cmd.Context()); err != nil {
+					return err
+				}
+			}
 			if tokenOnly {
 				// Transfer ownership only after output has succeeded.
 				return exportSession(cmd, auth)
 			}
-			return a.write(cmd, map[string]any{"authenticated": true, "user": auth.User, "session": "temporary; logged out on exit"})
+			return a.write(cmd, map[string]any{"authenticated": true, "user": auth.User, "history_sync": !noSync})
 		},
 	}
+	login.Flags().BoolVar(&noSync, "no-sync", false, "Validate login without initializing message history")
+	login.Flags().StringVar(&only, "sync-channel", "", "Limit login synchronization to one channel")
 	login.Flags().BoolVar(&tokenOnly, "token-only", false, "Print the session secret to stdout for a credential manager; caller must manage logout/expiry")
 	status := &cobra.Command{Use: "status", Short: "Check credentials without displaying secrets", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) (err error) {

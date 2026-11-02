@@ -103,7 +103,7 @@ func TestAuthExportAndStdioInputConflict(t *testing.T) {
 	t.Setenv("MATTERMOST_USERNAME", "test-user")
 	t.Setenv("MATTERMOST_PASSWORD", "test-password")
 	t.Setenv("MATTERMOST_MFA_TOKEN", "123456")
-	out, _, err := execute("auth", "login", "--token-only")
+	out, _, err := execute("auth", "login", "--no-sync", "--token-only")
 	if err != nil || strings.TrimSpace(out) != testutil.Session {
 		t.Fatalf("export failed: %v", err)
 	}

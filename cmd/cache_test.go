@@ -80,7 +80,7 @@ func TestNativeHelpAndServerAvailability(t *testing.T) {
 	}
 }
 
-func TestMessageSnapshotsRequireOptInAndRespectRefreshFailure(t *testing.T) {
+func TestMCPMessageCallsAlwaysReadLive(t *testing.T) {
 	environment(t)
 	f := testutil.New(t, true)
 	t.Setenv("MATTERMOST_URL", f.HTTP.URL)
@@ -100,7 +100,7 @@ func TestMessageSnapshotsRequireOptInAndRespectRefreshFailure(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if calls.Load() != 3 {
+	if calls.Load() != 4 {
 		t.Fatal("unexpected default or opt-in message reuse")
 	}
 	denied.Store(true)

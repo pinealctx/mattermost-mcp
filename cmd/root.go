@@ -41,7 +41,7 @@ func NewRoot(version string) *cobra.Command {
 	f := root.PersistentFlags()
 	f.BoolVar(&a.cacheTrace, "cache-trace", false, "Report cached versus live reads on stderr")
 	f.StringVar(&a.cacheMode, "cache", "", "Read policy: prefer, refresh or off (MATTERMOST_CACHE)")
-	f.BoolVar(&a.cacheMessages, "cache-messages", false, "Allow short-lived message and search snapshots (MATTERMOST_CACHE_MESSAGES)")
+	f.BoolVar(&a.cacheMessages, "cache-messages", false, "Legacy flag; persistent message history is available via channel open")
 	f.StringVar(&a.url, "url", "", "Mattermost base URL (MATTERMOST_URL)")
 	f.StringVar(&a.mcpURL, "mcp-url", "", "Official MCP endpoint override, same origin only (MATTERMOST_MCP_URL)")
 	f.StringVar(&a.token, "token", "", "PAT or session token (prefer MATTERMOST_TOKEN to keep it out of process arguments)")
@@ -49,7 +49,7 @@ func NewRoot(version string) *cobra.Command {
 	f.BoolVar(&a.passwordStdin, "password-stdin", false, "Read the login password from stdin instead of MATTERMOST_PASSWORD")
 	f.DurationVar(&a.timeout, "timeout", 0, "Operation timeout (default 30s or MATTERMOST_TIMEOUT)")
 	f.StringVarP(&a.output, "output", "o", "text", "Output format: text or json")
-	root.AddCommand(a.cacheCommand(), a.authCommand(), a.toolsCommand(), a.connectionCommand())
+	root.AddCommand(a.syncCommand(), a.cacheCommand(), a.authCommand(), a.toolsCommand(), a.connectionCommand())
 	root.AddCommand(a.domainCommands()...)
 	var enabled string
 	bridge := &cobra.Command{Use: "mcp", Short: "Bridge official MCP tools over local stdio", Args: cobra.NoArgs,
@@ -67,9 +67,6 @@ func (a *app) configuration(cmd *cobra.Command, prompt bool) (config.Config, err
 	}
 	if a.cacheMode != "" {
 		cfg.CacheMode = a.cacheMode
-	}
-	if cmd.Flags().Changed("cache-messages") {
-		cfg.CacheMessages = a.cacheMessages
 	}
 	if a.url != "" {
 		cfg.URL = a.url

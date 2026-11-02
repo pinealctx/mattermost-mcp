@@ -35,7 +35,7 @@ For password login, unset `MATTERMOST_TOKEN` and supply a username. In an intera
 mattermost-mcp --url https://chat.example.com --username alice connection test
 ```
 
-The password is sent only to the server's `/api/v4/users/login` endpoint. Its session token authenticates MCP calls. This does **not** create a PAT or require PAT creation permission. Each password-authenticated command logs out its own session on completion, including errors and normal interrupt handling. It never logs out a token supplied by the caller unless `auth logout` is explicitly invoked.
+The password is sent only to the server's `/api/v4/users/login` endpoint. Its session token authenticates MCP calls. This does **not** create a PAT or require PAT creation permission. Ordinary password-authenticated commands log out on completion. When starting a history worker, a temporary session is handed to that worker for cleanup on normal exit. It never logs out a token supplied by the caller unless `auth logout` is explicitly invoked.
 
 Accounts must permit password login. MFA remains enforced. SSO-only accounts require a separately obtained session/OAuth token; browser OAuth login is not implemented in this release. No password guessing, automatic login retries, background credential refresh, or desktop-cookie extraction is performed.
 
@@ -54,7 +54,7 @@ Flags override their corresponding environment values. A supplied token takes pr
 | `MATTERMOST_TIMEOUT` | `--timeout` | Timeout such as `30s` or `2m`; default `30s` |
 | `MATTERMOST_CACHE` | `--cache` | `prefer` (default), `refresh`, or `off` |
 | `MATTERMOST_CACHE_DIR` | — | Optional absolute, private directory for snapshots |
-| `MATTERMOST_CACHE_MESSAGES` | `--cache-messages` | Allow caching message results (default false) |
+| `MATTERMOST_HISTORY_DIR` | — | Optional absolute private directory for account SQLite databases |
 | `MATTERMOST_ENABLED_TOOLS` | `mcp --enabled-tools` | Optional comma-separated stdio tool allowlist |
 
 The default MCP URL is `<base-url>/plugins/mattermost-ai/mcp-server/mcp`. Base URLs with a deployment path prefix are supported. HTTPS is required except on loopback development servers. Credentials are never forwarded across origins, and HTTP redirects are rejected. Use the final server URL.
@@ -64,8 +64,8 @@ Prefer environment injection over `--token`, which may be visible in process lis
 ## Session lifecycle
 
 ```sh
-# Validate password login and log out immediately (no credential output).
-mattermost-mcp --username alice auth login
+# Validate password login only and log out immediately.
+mattermost-mcp --username alice auth login --no-sync
 
 # Check injected credentials without printing them.
 mattermost-mcp auth status -o json
@@ -89,7 +89,7 @@ The binary includes fixed names and parameter flags for 121 built-in registratio
 ```sh
 mattermost-mcp tool get-user-channels --help
 mattermost-mcp tool get-user-channels --team-id TEAM_ID --page 0 --per-page 100
-mattermost-mcp tool read-channel --channel-id CHANNEL_ID --limit 20 --cache-messages
+mattermost-mcp channel open CHANNEL_ID --limit 20
 mattermost-mcp tool list --cache refresh
 ```
 
@@ -103,16 +103,36 @@ The CLI and stdio bridge share an on-demand cache. A database belongs to one ser
 | --- | --- |
 | Dynamic tool catalog (names, schemas, annotations) | 5 minutes |
 | Team, channel, membership and user lookup results on the allowlist | 2 minutes |
-| `read_channel`, `read_post`, `search_posts` results | 20 seconds with `--cache-messages` |
+| Message and search tool calls | Live MCP calls; use `channel open` for the SQLite timeline |
 | Other tools | Live |
 
 Pass `--cache-trace` to show which eligible reads came from the server (`live`) or disk (`hit`) on stderr. Catalog and tool-result events are separate. Arguments and result contents are omitted.
 
-Snapshots match the exact query, including pagination, filters and requested limits. There is no background download or history index. Writes in other clients and changes to channel membership/visibility can make an unexpired snapshot stale. Use `--cache refresh` for an authoritative read and to replace the snapshot. `connection test` always verifies live connectivity. The bridge registers a catalog snapshot at startup; restart with `--cache refresh` to immediately pick up a changed toolset.
+Snapshots match the exact query, including pagination, filters and requested limits. The SQLite message history described below is independent of these snapshots. Writes in other clients and changes to channel membership/visibility can make an unexpired snapshot stale. Use `--cache refresh` for an authoritative read and to replace the snapshot. `connection test` always verifies live connectivity. The bridge registers a catalog snapshot at startup; restart with `--cache refresh` to immediately pick up a changed toolset.
 
 With caching enabled, writes and unrecognized calls always go upstream and invalidate snapshots for the account before and after the attempt. A read that started before invalidation cannot repopulate the old generation. `--cache off` bypasses disk, including invalidation, so other processes may retain snapshots until expiry or explicit refresh. `cache clear` invalidates the current account's snapshots across its credential partitions.
 
-Files live under the OS user cache directory in `mattermost-mcp/`, or the selected private cache directory. On Unix the application directory is private (0700) and new database files use 0600. The database contains **unencrypted** cached responses. Expiry limits reuse; physical removal is separate from expiry or logical clearing. Each account holds at most 128 snapshots, each at most 1 MiB. To remove the store physically, close clients and remove the dedicated cache directory. For sensitive workloads use `--cache off`; message caching is opt-in.
+Files live under the OS user cache directory in `mattermost-mcp/`, or the selected private cache directory. On Unix the application directory is private (0700) and new database files use 0600. The database contains **unencrypted** cached responses. Expiry limits reuse; physical removal is separate from expiry or logical clearing. Each account holds at most 128 snapshots, each at most 1 MiB. To remove the store physically, close clients and remove the dedicated cache directory. The legacy `--cache-messages` option is accepted for compatibility. The CLI no longer writes message-result TTL snapshots. Existing v0.2 snapshot files are not imported.
+
+## Persistent message history
+
+`auth login` initializes the most recent page of each joined conversation (including direct/group channels), then starts a detached worker to fill older pages. The worker finishes after backfill and reconciliation. Re-running login or `sync resume` resumes saved progress. A preconfigured bearer works with `sync start`. For password-only validation without syncing use `auth login --no-sync`; to initialize a single channel use `auth login --sync-channel CHANNEL_ID`. Token export still emits only the secret to stdout.
+
+```sh
+mattermost-mcp sync start
+mattermost-mcp sync start --channel CHANNEL_ID --foreground
+mattermost-mcp channel open CHANNEL_ID --limit 30
+mattermost-mcp sync status --channel CHANNEL_ID -o json
+mattermost-mcp sync stop --channel CHANNEL_ID
+mattermost-mcp sync resume --channel CHANNEL_ID
+```
+
+- SQLite databases under the OS user configuration directory (`mattermost-mcp/history`) are partitioned by the verified server URL and stable user ID. Later sessions for the same account reuse its history. Files are plaintext in a private directory (0700 and new database files 0600 on Unix). Rows store post ID, channel, author, thread root, timestamps, type, text and file IDs. Attachment bodies are not downloaded.
+- `channel open` emits two JSON lines, `local` then `reconciled`, newest first. The local phase checks current channel read permission and membership, then emits rows from SQLite before downloading new posts. Rows observed under a different credential are revalidated before display. A local preview may briefly show an older edit or a since-deleted post; use the reconciled frame for current content. Opening requires connectivity. Then it fetches the recent window and modifications since the saved watermark, merges edits, removes deleted bodies, and resumes unfinished backfill. An empty local view is expected on first use.
+- Normal MCP reads such as `tool read-channel` keep their upstream result format. Message history does not use the metadata cache TTL. `--cache off` affects the metadata cache, not an explicit history command.
+- A page and its checkpoint commit in one transaction. Historical pagination uses a fixed anchor when possible and verifies page boundaries. A moving boundary restarts the sweep. At traversal end, unseen IDs are checked against the server, not assumed deleted. A saturated changes response schedules a full reconciliation without advancing past the gap. History that the server has made inaccessible cannot be recovered.
+- A completed sweep describes the history visible during the last pass. The client pulls changes on open, rechecks displayed rows, and schedules a maintenance sweep on the next use after 24 hours. It does not subscribe to WebSocket events while idle. A full-account discovery prunes channels no longer joined; a scoped operation only touches its requested channel.
+- Jobs use page-sized transactions, a short delay between steps and backoff on throttling. `sync status` shows per-channel progress and the job outcome. `sync stop` requests a stop at a page boundary. After interruption or token expiry, supply valid credentials and run `sync resume`. Only the bearer is transferred through a private pipe to a worker, never saved to a job file. Externally supplied sessions stay owned by their caller.
 
 ## Commands
 
@@ -179,6 +199,6 @@ make release VERSION=v0.1.0
 
 Tests use isolated local HTTP and MCP fixtures, including password/MFA login, session ownership and cleanup, pagination, JSON/SSE responses, stdio bridging, tool errors, and credential origin boundaries. They require no real account or deployment. Release tags build checksummed archives for five platform targets.
 
-The internal authentication adapter calls REST only for login, account validation and logout. Business operations use the official MCP endpoint. See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance and [SECURITY.md](SECURITY.md) for reporting security issues.
+MCP tools and writes use the official MCP endpoint. Login and message synchronization use the authenticated same-origin Mattermost REST API. See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance and [SECURITY.md](SECURITY.md) for reporting security issues.
 
 Licensed under the [MIT License](LICENSE).
